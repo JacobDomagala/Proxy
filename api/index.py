@@ -27,7 +27,7 @@ initialize_firebase()
 # Initialize Firestore DB
 db = firestore.client()
 
-@app.route('/validate-user', methods=['POST'])
+@app.route('/api', methods=['POST'])
 def validate_user():
     try:
         data = request.get_json()
