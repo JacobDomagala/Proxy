@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 # Configure Rate Limiting
 limiter = Limiter(
-    app,
+    app=app,
     key_func=lambda: request.headers.get('x-api-key') or get_remote_address(),
     default_limits=["200 per day", "50 per hour"]
 )
