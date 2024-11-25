@@ -99,13 +99,18 @@ def validate_user():
 @app.route('/create_assistant', methods=['POST'])
 @require_auth
 def create_assistant():
+    result, json, code = validate()
+    if result == True:
     # my_assistant = client.beta.assistants.create(
     #     instructions="You are a personal math tutor. When asked a question, write and run Python code to answer the question.",
     #     name="Math Tutor",
     #     tools=[{"type": "code_interpreter"}],
     #     model="gpt-4o-mini",
     # )
-    print("Creating assistant!")
+        print("Creating assistant!")
+        return jsonify({"data": "create_assistant"}), code 
+    else:
+        return json, code
 
 def create_thread(assistantId):
     # empty_thread = client.beta.threads.create()
