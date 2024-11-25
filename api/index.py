@@ -70,7 +70,7 @@ def validate():
         doc = user_ref.get()
 
         if doc.exists:
-            return True, None
+            return True, None, 200
         else:
             return False, jsonify({"error": "Invalid user."}), 401
     except Exception as e:
@@ -82,32 +82,34 @@ def validate():
 @require_auth
 @limiter.limit("100 per day; 20 per hour")  # Customize as needed
 def validate_user():
-    result, json = validate()
+    result, json, code = validate()
     if result == True:
-        response = requests.post(
-            "https://api.openai.com/v1/engines/davinci/completions",
-            headers={"Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY')}"},
-            json=data
-        )
-        return jsonify(response.json()), 200
+        # data = request.get_json()
+        # response = requests.post(
+        #     "OpenAI URL",
+        #     headers={"Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY')}"},
+        #     json=data
+        # )
+        print(f"Sending to OpenAI")
+        return jsonify({"data": "Sending to OpenAI"}), code
                 
     else:
-        return json
+        return json, code
     
 @app.route('/create_assistant', methods=['POST'])
 @require_auth
 def create_assistant():
-    my_assistant = client.beta.assistants.create(
-        instructions="You are a personal math tutor. When asked a question, write and run Python code to answer the question.",
-        name="Math Tutor",
-        tools=[{"type": "code_interpreter"}],
-        model="gpt-4o-mini",
-    )
-    print(my_assistant)
+    # my_assistant = client.beta.assistants.create(
+    #     instructions="You are a personal math tutor. When asked a question, write and run Python code to answer the question.",
+    #     name="Math Tutor",
+    #     tools=[{"type": "code_interpreter"}],
+    #     model="gpt-4o-mini",
+    # )
+    print("Creating assistant!")
 
 def create_thread(assistantId):
-    empty_thread = client.beta.threads.create()
-    print(empty_thread)
+    # empty_thread = client.beta.threads.create()
+    print(f"Creating thread!")
 
 if __name__ == "__main__":
     app.run(debug=True)
