@@ -84,11 +84,13 @@ def validate():
 def validate_user():
     result, json = validate()
     if result == True:
+        data = request.get_json()
         response = requests.post(
-            "https://api.openai.com/v1/engines/davinci/completions",
+            "OpenAI URL",
             headers={"Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY')}"},
             json=data
         )
+        print(f"Sending to OpenAI {data}")
         return jsonify(response.json()), 200
                 
     else:
@@ -97,17 +99,17 @@ def validate_user():
 @app.route('/create_assistant', methods=['POST'])
 @require_auth
 def create_assistant():
-    my_assistant = client.beta.assistants.create(
-        instructions="You are a personal math tutor. When asked a question, write and run Python code to answer the question.",
-        name="Math Tutor",
-        tools=[{"type": "code_interpreter"}],
-        model="gpt-4o-mini",
-    )
-    print(my_assistant)
+    # my_assistant = client.beta.assistants.create(
+    #     instructions="You are a personal math tutor. When asked a question, write and run Python code to answer the question.",
+    #     name="Math Tutor",
+    #     tools=[{"type": "code_interpreter"}],
+    #     model="gpt-4o-mini",
+    # )
+    print("Creating assistant!")
 
 def create_thread(assistantId):
-    empty_thread = client.beta.threads.create()
-    print(empty_thread)
+    # empty_thread = client.beta.threads.create()
+    print(f"Creating thread!")
 
 if __name__ == "__main__":
     app.run(debug=True)
