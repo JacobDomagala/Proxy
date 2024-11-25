@@ -2,3 +2,4 @@ requests
 firebase-admin
 flask
 flask_limiter
+openai
