@@ -7,16 +7,21 @@ import requests
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from functools import wraps
-from openai import OpenAI
-    
-app = Flask(__name__)
-client = OpenAI()
 
-# Configure Rate Limiting
+app = Flask(__name__)
+
+# Get Redis URL from environment variable
+redis_password = os.getenv('UPSTASH_REDIS_PASSWORD')
+redis_host = os.getenv('UPSTASH_REDIS_HOST')
+redis_port = int(os.getenv('UPSTASH_REDIS_PORT', 6379))
+redis_url = f"rediss://:{redis_password}@{redis_host}:{redis_port}"
+
+# Configure Rate Limiting with Redis backend
 limiter = Limiter(
     app=app,
     key_func=lambda: request.headers.get('x-api-key') or get_remote_address(),
-    default_limits=["200 per day", "50 per hour"]
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri=redis_url  # Use the Redis URI from Upstash
 )
 
 # Initialize Firebase Admin SDK
@@ -38,9 +43,8 @@ def require_auth(f):
             # Expected format: "Bearer <ID_TOKEN>"
             id_token = auth_header.split(" ").pop()
             decoded_token = auth.verify_id_token(id_token)
-            uid = decoded_token['uid']
             request.user = decoded_token
-        except Exception as e:
+        except Exception:
             return jsonify({"error": "Invalid or expired token."}), 401
 
         return f(*args, **kwargs)
@@ -55,18 +59,19 @@ def validate():
     try:
         data = request.get_json()
         user_id = data.get('user_id')
-        type = data.get('type')
+        req_type = data.get('type')
         message = data.get('message')
 
-        if not user_id or not message or not type:
+        print(f"Validate got the data={data}")
+        if not user_id or not message or not req_type:
             return False, jsonify({"error": "Missing 'user_id', 'message' or 'type' in request."}), 400
 
-        # Ensure the user_id from token matches the user_id in the request
+        # Ensure the user_id matches the token uid
         token_uid = request.user['uid']
         if user_id != token_uid:
             return False, jsonify({"error": "Unauthorized access."}), 403
 
-        # Validate user against Firestore
+        # Validate user in Firestore
         user_ref = firestore_db.collection('users').document(user_id)
         doc = user_ref.get()
 
@@ -81,40 +86,34 @@ def validate():
 
 @app.route('/api', methods=['POST'])
 @require_auth
-@limiter.limit("100 per day; 20 per hour")  # Customize as needed
+@limiter.limit("100 per day; 20 per hour")  # Adjust limits as desired
 def validate_user():
-    result, json, code = validate()
-    if result == True:
+    result, json_response, code = validate()
+    if result:
         data = request.get_json()
+        # Forward request to OpenAI or process as needed
+        # For example:
         # response = requests.post(
-        #     "OpenAI URL",
+        #     "https://api.openai.com/v1/completions",
         #     headers={"Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY')}"},
-        #     json=data
+        #     json={"prompt": data.get('message')}
         # )
-        return jsonify({"data": f"Response from OpenAI for a request {data.get('type')}"}), code
-                
+        # openai_resp = response.json()
+        return jsonify({"data": f"Response from OpenAI for request type: {data.get('type')} with data: {data.get('message')}"}), code
     else:
-        return json, code
-    
+        return json_response, code
+
 @app.route('/create_assistant', methods=['POST'])
 @require_auth
 def create_assistant():
-    result, json, code = validate()
-    if result == True:
-    # my_assistant = client.beta.assistants.create(
-    #     instructions="You are a personal math tutor. When asked a question, write and run Python code to answer the question.",
-    #     name="Math Tutor",
-    #     tools=[{"type": "code_interpreter"}],
-    #     model="gpt-4o-mini",
-    # )
+    result, json_response, code = validate()
+    if result:
+        # Create assistant logic here
+        # my_assistant = ...
         print("Creating assistant!")
-        return jsonify({"data": "create_assistant"}), code 
+        return jsonify({"data": "create_assistant"}), code
     else:
-        return json, code
-
-def create_thread(assistantId):
-    # empty_thread = client.beta.threads.create()
-    print(f"Creating thread!")
+        return json_response, code
 
 if __name__ == "__main__":
     app.run(debug=True)
