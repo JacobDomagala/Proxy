@@ -55,10 +55,11 @@ def validate():
     try:
         data = request.get_json()
         user_id = data.get('user_id')
+        type = data.get('type')
         message = data.get('message')
 
-        if not user_id or not message:
-            return False, jsonify({"error": "Missing 'user_id' or 'message' in request."}), 400
+        if not user_id or not message or not type:
+            return False, jsonify({"error": "Missing 'user_id', 'message' or 'type' in request."}), 400
 
         # Ensure the user_id from token matches the user_id in the request
         token_uid = request.user['uid']
@@ -84,14 +85,13 @@ def validate():
 def validate_user():
     result, json, code = validate()
     if result == True:
-        # data = request.get_json()
+        data = request.get_json()
         # response = requests.post(
         #     "OpenAI URL",
         #     headers={"Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY')}"},
         #     json=data
         # )
-        print(f"Sending to OpenAI")
-        return jsonify({"data": "Sending to OpenAI"}), code
+        return jsonify({"data": f"Response from OpenAI for a request {data.get('type')}"}), code
                 
     else:
         return json, code
